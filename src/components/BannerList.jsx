@@ -25,7 +25,7 @@ const BannerList = () => {
   const fetchBanners = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_APP_SERVER_URL}api/banners`
+        `${import.meta.env.VITE_APP_SERVER_URL}api/banners`,
       );
       setBanners(response.data);
       setLoading(false);
@@ -38,13 +38,13 @@ const BannerList = () => {
 
   const handleDelete = async (id) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this banner?"
+      "Are you sure you want to delete this banner?",
     );
     if (!confirmDelete) return;
 
     try {
       await axios.delete(
-        `${import.meta.env.VITE_APP_SERVER_URL}api/banners/${id}`
+        `${import.meta.env.VITE_APP_SERVER_URL}api/banners/${id}`,
       );
       setBanners(banners.filter((banner) => banner._id !== id));
       setMessage("Banner deleted successfully.");
@@ -68,7 +68,7 @@ const BannerList = () => {
         form,
         {
           headers: { "Content-Type": "multipart/form-data" },
-        }
+        },
       );
       setTitle("");
       setFile(null);
@@ -80,6 +80,11 @@ const BannerList = () => {
     } finally {
       setPosting(false);
     }
+  };
+  const resolveImageUrl = (url) => {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url; // যদি full URL হয় (ImgBB)
+    return `${import.meta.env.VITE_APP_SERVER_URL}${url}`; // যদি local relative হয়
   };
 
   return (
@@ -195,9 +200,7 @@ const BannerList = () => {
                   >
                     <div className="relative h-52 w-full overflow-hidden">
                       <img
-                        src={`${import.meta.env.VITE_APP_SERVER_URL}${
-                          banner.imageUrl
-                        }`}
+                        src={resolveImageUrl(banner.imageUrl)}
                         alt={banner.title}
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                         loading="lazy"

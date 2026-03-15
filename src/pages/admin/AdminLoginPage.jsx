@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { FiLock, FiMail, FiLogIn } from "react-icons/fi";
+import { useUser } from "../../hooks/userContext";
 
 const getBaseUrl = () => {
   const base = import.meta.env.VITE_APP_SERVER_URL || "";
@@ -16,7 +17,7 @@ const AdminLoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
+  const { updateUser } = useUser();
   // যদি আগে থেকেই লগইন থাকে → redirect করো
   useEffect(() => {
     const token = localStorage.getItem(getTokenKey());
@@ -24,39 +25,42 @@ const AdminLoginPage = () => {
   }, [navigate]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const email = form.email.trim();
-    const password = form.password;
+  e.preventDefault();
+  const email = form.email.trim().toLowerCase();
+  const password = form.password;
 
-    if (!email || !password) return toast.warn("Email & password required");
+  if (!email || !password) return toast.warn("Email & password required");
 
-    try {
-      setLoading(true);
-      const url = getBaseUrl();
+  try {
+    setLoading(true);
+    const url = getBaseUrl();
 
-      // ✅ correct endpoint + base url with slash
-      const res = await axios.post(`${url}api/auth/admin/login`, { email, password });
+    // ✅ এখানে res define করো
+    const res = await axios.post(`${url}api/auth/admin/login`, { email, password });
 
-      if (res.data?.token) {
-        // ✅ store token in one place
-        localStorage.setItem(getTokenKey(), res.data.token);
+    if (res.data?.token) {
+      localStorage.setItem("token", res.data.token);
 
-        // ✅ backend response may send `user` instead of `admin`
-        const adminInfo = res.data.user || res.data.admin || null;
-        if (adminInfo) localStorage.setItem("adminData", JSON.stringify(adminInfo));
+      const adminInfo = res.data.user || res.data.admin || null;
 
-        toast.success("Login successful!");
-        navigate("/dashboard");
-      } else {
-        toast.error("Token missing from server response");
+      if (adminInfo) {
+        localStorage.setItem("user", JSON.stringify(adminInfo)); // ✅ context reads this
+        updateUser(adminInfo); // ✅ no reload needed
       }
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Invalid credentials. Try again.");
-    } finally {
-      setLoading(false);
+
+      toast.success("Login successful!");
+      navigate("/dashboard", { replace: true });
+    } else {
+      toast.error("Token missing from server response");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error(err?.response?.data?.message || "Invalid credentials. Try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-slate-100 px-4">
@@ -85,7 +89,7 @@ const AdminLoginPage = () => {
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="admin@example.com"
-                className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full pl-10 pr-3 py-2 border rounded text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               />
             </div>
           </div>
@@ -101,7 +105,7 @@ const AdminLoginPage = () => {
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full pl-10 pr-3 py-2 border rounded text-sm focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
               />
             </div>
           </div>
@@ -109,7 +113,7 @@ const AdminLoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-60"
+            className="w-full py-1.5 rounded-2xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition disabled:opacity-60"
           >
             {loading ? "Logging in..." : "Login"}
           </button>

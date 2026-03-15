@@ -1,10 +1,17 @@
 import { Navigate } from "react-router-dom";
-import { useUser } from "./userContext";
+import { jwtDecode } from "jwt-decode";
 
-// ager code
 export const AdminRoute = ({ children }) => {
-    
-    const { user } = useUser();
-    return user && user.role === "admin" ? children : <Navigate to="/login" />;
-};
+  const token = localStorage.getItem("token");
 
+  if (!token) return <Navigate to="/admin-login" replace />;
+
+  try {
+    const decoded = jwtDecode(token);
+    if (["admin", "superadmin"].includes(decoded.role)) return children;
+
+    return <Navigate to="/" replace />;
+  } catch {
+    return <Navigate to="/admin-login" replace />;
+  }
+};

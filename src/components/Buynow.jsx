@@ -21,6 +21,9 @@ const Buynow = () => {
   const [fullAddress, setFullAddress] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // ✅ phone state (email user can type here)
+  const [phone, setPhone] = useState(user?.mobile || "");
+
   // coupon states
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
@@ -37,6 +40,11 @@ const Buynow = () => {
     if (pd) setBuynowItems([pd]);
     else console.error("No product details provided!");
   }, [location.state?.productDetails]);
+
+  // ✅ keep phone synced if user has mobile in profile (but allow manual typing)
+  useEffect(() => {
+    if (user?.mobile) setPhone(user.mobile);
+  }, [user]);
 
   // load saved address
   useEffect(() => {
@@ -168,6 +176,12 @@ const Buynow = () => {
     toast.info("Coupon removed");
   };
 
+  // ✅ simple BD phone check
+  const isValidPhone = (v) => {
+    const s = String(v || "").trim();
+    return /^01\d{9}$/.test(s) || s.length >= 10; // allow generic too
+  };
+
   // ======= Submit Order =======
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -185,6 +199,12 @@ const Buynow = () => {
       return;
     }
 
+    // ✅ phone required
+    if (!isValidPhone(phone)) {
+      toast.error("Please enter a valid phone number.", { position: "top-center" });
+      return;
+    }
+
     const orderData = {
       userId: user?.id,
       cartItems: buynowItems.map((item) => ({
@@ -198,8 +218,11 @@ const Buynow = () => {
       district: selectedDistrict,
       shippingOption: districtZone === "inside" ? "inside" : "outside",
       paymentMethod: "Cash on Delivery",
+
+      // ⚠️ backend recalculates anyway — ok to send for UI
       shippingCost: shippingAfterDiscount,
       totalCost: totalPrice,
+
       pricing: {
         subtotal: subTotal,
         couponDiscount,
@@ -208,11 +231,13 @@ const Buynow = () => {
         subtotalAfterDiscount,
       },
       coupon: appliedCoupon ? { code: appliedCoupon.code, id: appliedCoupon._id || null } : null,
+
       customer: {
         name: user?.name || "",
         email: user?.email || "",
-        mobile: user?.mobile || "",
+        mobile: String(phone).trim(), // ✅ FIXED: from phone state
       },
+
       address: fullAddress,
     };
 
@@ -225,8 +250,11 @@ const Buynow = () => {
       });
 
       if (response.ok) {
-        toast.success("Order placed successfully!", { position: "top-center" });
-        navigate("/dashboard/order");
+        toast.success("আপনার অর্ডারটি সম্পন্ন হয়েছে", {
+          position: "top-center",
+          autoClose: 1500,
+          onClose: () => navigate("/dashboard/order"),
+        });
       } else {
         const errorData = await response.json().catch(() => ({}));
         toast.error(
@@ -267,6 +295,8 @@ const Buynow = () => {
 
         <PaymentDetailsForm
           user={user}
+          phone={phone}              // ✅ NEW
+          setPhone={setPhone}        // ✅ NEW
           couponCode={couponCode}
           setCouponCode={setCouponCode}
           appliedCoupon={appliedCoupon}

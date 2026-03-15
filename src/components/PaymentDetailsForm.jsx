@@ -13,6 +13,11 @@ const DHAKA_METRO = new Set([
 
 const PaymentDetailsForm = ({
   user,
+
+  // ✅ NEW: controlled phone from Buynow
+  phone,
+  setPhone,
+
   couponCode,
   setCouponCode,
   appliedCoupon,
@@ -133,6 +138,7 @@ const PaymentDetailsForm = ({
             className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-blue-500"
             placeholder="your.email@gmail.com"
             defaultValue={user?.email || ""}
+            readOnly
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
             <svg
@@ -159,7 +165,8 @@ const PaymentDetailsForm = ({
             name="mobile"
             className="w-full rounded-md border border-gray-200 px-4 py-3 pl-11 text-sm shadow-sm outline-none focus:border-blue-500 focus:ring-blue-500"
             placeholder="Your 11 digit phone number"
-            defaultValue={user?.mobile || ""}
+            value={phone || ""}                         // ✅ controlled
+            onChange={(e) => setPhone(e.target.value)}  // ✅ updates Buynow
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 inline-flex items-center px-3">
             <svg
@@ -233,25 +240,19 @@ const PaymentDetailsForm = ({
           {couponDiscount > 0 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-emerald-700">Coupon discount</p>
-              <p className="font-semibold text-emerald-700">
-                – TK {couponDiscount}
-              </p>
+              <p className="font-semibold text-emerald-700">– TK {couponDiscount}</p>
             </div>
           )}
 
           <div className="flex items-center justify-between mt-1">
             <p className="text-sm font-medium text-gray-900">Delivery Charge</p>
-            <p className="font-semibold text-gray-900">
-              TK {shippingAfterDiscount}.00
-            </p>
+            <p className="font-semibold text-gray-900">TK {shippingAfterDiscount}.00</p>
           </div>
 
           {shippingDiscount > 0 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-emerald-700">Shipping discount</p>
-              <p className="font-semibold text-emerald-700">
-                – TK {shippingDiscount}
-              </p>
+              <p className="font-semibold text-emerald-700">– TK {shippingDiscount}</p>
             </div>
           )}
 
@@ -263,9 +264,7 @@ const PaymentDetailsForm = ({
 
         <div className="mt-6 flex items-center justify-between">
           <p className="text-sm font-medium text-gray-900">Total</p>
-          <p className="text-2xl font-semibold text-gray-900">
-            TK {totalPrice}
-          </p>
+          <p className="text-2xl font-semibold text-gray-900">TK {totalPrice}</p>
         </div>
       </div>
 

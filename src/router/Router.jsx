@@ -74,7 +74,7 @@ const withBase = (p) => {
 };
 
 export const router = createBrowserRouter([
-   { path: "/admin/login", element: <AdminLoginPage /> },
+   { path: "/admin-login", element: <AdminLoginPage /> },
   {
     path: "/",
     element: <MainLayout />,
@@ -82,7 +82,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> }, // "/" -> Home
 
       // 🚀 admin login
-      // { path: "admin/login", element: <AdminLoginPage /> },
+      { path: "admin/login", element: <AdminLoginPage /> },
       { path: "search", element: <SearchResults /> },
 
       // product details
