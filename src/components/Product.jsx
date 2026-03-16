@@ -67,31 +67,39 @@ export default function Product() {
     return res.json();
   };
 
-  const {
-    data,
-    isLoading,
-    isFetching,
-    refetch,
-    error,
-    isPreviousData,
-  } = useQuery({
-    queryKey: ["products", { page, limit, q: debouncedQ }],
-    queryFn: fetchProducts,
-    keepPreviousData: true,
-    staleTime: 10_000,
-    placeholderData: (prev) => prev,
-  });
+const {
+  data,
+  isLoading,
+  isFetching,
+  refetch,
+  error,
+  isPreviousData,
+} = useQuery({
+  queryKey: ["products", { page, limit, q: debouncedQ }],
+  queryFn: fetchProducts,
+  keepPreviousData: true,
+  staleTime: 5000, // 5 সেকেন্ড পর stale হবে
+  cacheTime: 300000, // 5 মিনিট ক্যাশে থাকবে
+  refetchOnWindowFocus: false, // উইন্ডো ফোকাসে রিফেচ বন্ধ
+  refetchOnMount: true, // মাউন্টে রিফেচ করুন
+  refetchOnReconnect: true, // রিকানেক্টে রিফেচ করুন
+  placeholderData: (prev) => prev,
+});
 
   const items      = data?.items || [];
   const total      = data?.total || 0;
   const totalPages = data?.totalPages || 1;
 
-  // যদি কোনো পেজে শেষ আইটেমটা ডিলিট হয়, আগের পেজে নেমে যাও (safer)
-  useEffect(() => {
-    if (!isFetching && page > 1 && items.length === 0 && total > 0) {
-      setPage(p => p - 1);
-    }
-  }, [items.length, isFetching, page, total]);
+ // পেজ অ্যাডজাস্টমেন্ট useEffect - আরও নির্ভুল করুন
+useEffect(() => {
+  if (!isFetching && items.length === 0 && total > 0 && page > 1) {
+    // আগের পেজে যান
+    setPage(prev => prev - 1);
+  } else if (!isFetching && items.length === 0 && total === 0) {
+    // কোনো ডাটা নেই, প্রথম পেজে থাকুন
+    setPage(1);
+  }
+}, [items.length, isFetching, page, total]);
 
   const handleEditClick = (product) => {
     setSelectedProduct(product);
@@ -118,71 +126,96 @@ export default function Product() {
     }).then((r) => r.isConfirmed);
 
   // --- Delete mutation (optimistic update on exact key)
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      const response = await fetch(
-        `${import.meta.env.VITE_APP_SERVER_URL}api/products/${id}`,
-        { method: "DELETE", credentials: "include" }
-      );
-      if (!response.ok) {
-        let msg = "Failed to delete the product";
-        try {
-          const j = await response.json();
-          msg = j?.message || msg;
-        } catch {}
-        throw new Error(msg);
-      }
-      return await response.json();
-    },
+// Delete mutation (সঠিক ভার্সন)
+const deleteMutation = useMutation({
+  mutationFn: async (id) => {
+    const response = await fetch(
+      `${import.meta.env.VITE_APP_SERVER_URL}api/products/${id}`,
+      { method: "DELETE", credentials: "include" }
+    );
+    if (!response.ok) {
+      let msg = "Failed to delete the product";
+      try {
+        const j = await response.json();
+        msg = j?.message || msg;
+      } catch {}
+      throw new Error(msg);
+    }
+    return { id, ...(await response.json()) };
+  },
 
-    onMutate: async (id) => {
-      showLoader();
+  onMutate: async (id) => {
+    showLoader();
+    
+    // বর্তমান কোয়েরি ক্যান্সেল করুন
+    const currentKey = ["products", { page, limit, q: debouncedQ }];
+    await queryClient.cancelQueries({ queryKey: currentKey });
 
-      // exact key: current table view
-      const currentKey = ["products", { page, limit, q: debouncedQ }];
-      await queryClient.cancelQueries({ queryKey: currentKey });
+    // আগের ডাটা সংরক্ষণ করুন
+    const previousData = queryClient.getQueryData(currentKey);
 
-      const previous = queryClient.getQueryData(currentKey);
-
-      if (previous?.items) {
-        const nextTotal = Math.max(0, (previous.total ?? 0) - 1);
-        const nextTotalPages = Math.max(1, Math.ceil(nextTotal / limit));
-        queryClient.setQueryData(currentKey, {
-          ...previous,
-          items: previous.items.filter((p) => p._id !== id),
-          total: nextTotal,
-          totalPages: nextTotalPages,
-        });
-      }
-
-      // (optional) অন্য variants-এও প্রয়োগ
-      const snapshotsAll = queryClient.getQueriesData({ queryKey: ["products"] });
-      snapshotsAll.forEach(([key, old]) => {
-        if (!old?.items) return;
-        queryClient.setQueryData(key, {
-          ...old,
-          items: old.items.filter((p) => p._id !== id),
-          total: Math.max(0, (old.total || 0) - 1),
-        });
+    // Optimistic update
+    if (previousData) {
+      const updatedItems = previousData.items.filter(item => item._id !== id);
+      const newTotal = Math.max(0, previousData.total - 1);
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / limit));
+      
+      // বর্তমান পেজ আপডেট করুন
+      queryClient.setQueryData(currentKey, {
+        ...previousData,
+        items: updatedItems,
+        total: newTotal,
+        totalPages: newTotalPages,
       });
 
-      return { previous, currentKey, snapshotsAll };
-    },
-
-    onError: (err, _id, ctx) => {
-      if (ctx?.currentKey && ctx?.previous) {
-        queryClient.setQueryData(ctx.currentKey, ctx.previous);
+      // যদি বর্তমান পেজ খালি হয়ে যায়, আগের পেজে যান
+      if (updatedItems.length === 0 && page > 1) {
+        setPage(page - 1);
       }
-      ctx?.snapshotsAll?.forEach(([key, data]) => queryClient.setQueryData(key, data));
-      Swal.fire({ icon: "error", title: err?.message || "Delete failed", timer: 1500, showConfirmButton: false });
-    },
+    }
 
-    onSettled: () => {
-      hideLoader();
-      // server truth-sync (current + other pages)
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-  });
+    return { previousData, currentKey };
+  },
+
+  onError: (err, id, context) => {
+    if (context?.previousData) {
+      queryClient.setQueryData(context.currentKey, context.previousData);
+    }
+    hideLoader();
+    Swal.fire({
+      icon: "error",
+      title: err?.message || "Delete failed",
+      timer: 1500,
+      showConfirmButton: false
+    });
+  },
+
+  onSuccess: (data, id, context) => {
+    // সফল হলে:
+    // 1. বর্তমান কোয়েরি ইনভ্যালিডেট করুন (কিন্তু ইমিডিয়েট রিফেচ না করে)
+    queryClient.invalidateQueries({ 
+      queryKey: ["products"],
+      refetchType: 'active' // শুধু active কোয়েরি রিফেচ করুন
+    });
+    
+    // 2. পেজ অ্যাডজাস্টমেন্ট চেক করুন
+    setTimeout(() => {
+      const currentData = queryClient.getQueryData(context.currentKey);
+      if (currentData?.items.length === 0 && page > 1) {
+        setPage(page - 1);
+      }
+    }, 100);
+  },
+
+  onSettled: () => {
+    hideLoader();
+    // সব products কোয়েরি ইনভ্যালিডেট করুন কিন্তু ইমিডিয়েট রিফেচ করবেন না
+    queryClient.invalidateQueries({ 
+      queryKey: ["products"],
+      refetchType: 'none' // ইমিডিয়েট রিফেচ বন্ধ রাখুন
+    });
+  },
+});
 
   const handleDelete = async (id) => {
     const ok = await confirmDelete();
