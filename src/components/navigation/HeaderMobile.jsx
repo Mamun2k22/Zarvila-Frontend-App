@@ -163,12 +163,27 @@ function HeaderMobile({
   className="flex items-center justify-center w-[140px] sm:w-[160px] -ml-1"
 >
   {siteLogo ? (
+    // <img
+    //   className="h-8 w-full object-contain"   // ✅ fixed height + contain
+    //   src={`${settingsApi.API_BASE}${siteLogo}`}
+    //   alt={siteBrand}
+    //   loading="lazy"
+    // />
     <img
-      className="h-8 w-full object-contain"   // ✅ fixed height + contain
-      src={`${settingsApi.API_BASE}${siteLogo}`}
-      alt={siteBrand}
-      loading="lazy"
-    />
+  className="h-8 w-full object-contain"
+  src={
+    siteLogo
+      ? /^(https?:)?\/\//i.test(siteLogo.trim())
+        ? siteLogo.trim()
+        : `${settingsApi.API_BASE}${siteLogo}`
+      : ""
+  }
+  alt={siteBrand}
+  loading="lazy"
+  onError={(e) => {
+    e.currentTarget.src = "/placeholder.png";
+  }}
+/>
   ) : (
     <span className="text-black font-semibold tracking-wide text-sm truncate">
       {siteBrand}
