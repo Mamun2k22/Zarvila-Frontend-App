@@ -16,8 +16,8 @@ export default function LogoSettings() {
   const [msg, setMsg] = useState("");
 
   const [logoUrl, setLogoUrl] = useState("");
-  const [brandName, setBrandName] = useState("ZARVILA");
-  const [newBrandName, setNewBrandName] = useState("ZARVILA");
+  const [brandName, setBrandName] = useState("Bholamart");
+  const [newBrandName, setNewBrandName] = useState("Bholamart");
 
   const logoSrc = useMemo(() => {
     if (!logoUrl) return "";
@@ -32,8 +32,8 @@ export default function LogoSettings() {
       const res = await fetchPublicSettings();
       const data = res?.data || {};
       setLogoUrl(data.logoUrl || "");
-      setBrandName(data.brandName || "ZARVILA");
-      setNewBrandName(data.brandName || "ZARVILA");
+      setBrandName(data.brandName || "Bholamart");
+      setNewBrandName(data.brandName || "Bholamart");
     } catch (e) {
       setError(e.message || "Failed to load settings");
     } finally {
@@ -391,7 +391,7 @@ export default function LogoSettings() {
               </div>
 
               <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-relaxed text-zinc-700">
-                Tip: Keep it short (e.g., <b>ZARVILA</b>) for clean navbar alignment.
+                Tip: Keep it short (e.g., <b>Bholamart</b>) for clean navbar alignment.
               </div>
             </section>
           </div>

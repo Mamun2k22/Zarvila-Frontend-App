@@ -1,5 +1,6 @@
+export const API_BASE =
+  (import.meta.env.VITE_APP_SERVER_URL || "http://localhost:5000").replace(/\/$/, "");
 
-export const API_BASE = import.meta.env.VITE_APP_SERVER_URL || "http://localhost:5000";
 async function jsonOrThrow(res) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data?.success === false) {
@@ -13,7 +14,7 @@ function getToken() {
 }
 
 export async function fetchPublicSettings() {
-  const res = await fetch(`${API_BASE}api/settings/public`, {
+  const res = await fetch(`${API_BASE}/api/settings/public`, {
     method: "GET",
     credentials: "include",
   });
@@ -49,9 +50,10 @@ export async function updateBrandName(brandName) {
   });
   return jsonOrThrow(res);
 }
+
 // frontend/public use (social + text)
 export async function fetchPublicHeaderSettings() {
-  const res = await fetch(`${API_BASE}api/header-settings`, {
+  const res = await fetch(`${API_BASE}/api/header-settings`, {
     method: "GET",
     credentials: "include",
   });
@@ -60,7 +62,7 @@ export async function fetchPublicHeaderSettings() {
 
 // admin panel theke update korar jonno
 export async function updateHeaderSettings(payload) {
-const res = await fetch(`${API_BASE}api/header-settings`, {
+  const res = await fetch(`${API_BASE}/api/header-settings`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -72,7 +74,7 @@ const res = await fetch(`${API_BASE}api/header-settings`, {
 // ✅ admin read
 export async function fetchAdminShippingSettings() {
   const token = getToken();
-  const res = await fetch(`${API_BASE}api/shipping-settings`, {
+  const res = await fetch(`${API_BASE}/api/shipping-settings`, {
     method: "GET",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     credentials: "include",
@@ -83,7 +85,7 @@ export async function fetchAdminShippingSettings() {
 // ✅ admin update
 export async function updateShippingSettings(payload) {
   const token = getToken();
-  const res = await fetch(`${API_BASE}api/shipping-settings`, {
+  const res = await fetch(`${API_BASE}/api/shipping-settings`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -95,18 +97,14 @@ export async function updateShippingSettings(payload) {
   return jsonOrThrow(res);
 }
 
-
-// ✅ default export add (so no import error)
 export default {
   API_BASE,
   fetchPublicSettings,
   uploadLogo,
   deleteLogo,
   updateBrandName,
-   fetchPublicHeaderSettings,
+  fetchPublicHeaderSettings,
   updateHeaderSettings,
   fetchAdminShippingSettings,
-  // fetchAdminShippingSettings,
-  updateShippingSettings
-
+  updateShippingSettings,
 };

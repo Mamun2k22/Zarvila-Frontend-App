@@ -1,7 +1,6 @@
-
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { FiX, FiUpload, FiTrash, FiCheckCircle } from "react-icons/fi";
 import "react-toastify/dist/ReactToastify.css";
 import ReactQuill from "react-quill";
@@ -17,7 +16,6 @@ const withBase = (path) => {
 };
 
 const isNonEmpty = (v) => typeof v === "string" && v.trim().length > 0;
-
 
 const quillModules = {
   toolbar: [
@@ -49,7 +47,7 @@ export default function AddProduct({ isOpen, isClose, refetch }) {
 
   // 🔥 now only sizes
   const [sizeWeights, setSizeWeights] = useState([{ size: "" }]);
-    const [chestSizes, setChestSizes] = useState([{ size: "" }]);
+  const [chestSizes, setChestSizes] = useState([{ size: "" }]);
   const [waistSizes, setWaistSizes] = useState([{ size: "" }]);
 
   const [selectedColors, setSelectedColors] = useState([]);
@@ -148,7 +146,7 @@ export default function AddProduct({ isOpen, isClose, refetch }) {
     setSelectedColors((prev) =>
       prev.includes(colorName)
         ? prev.filter((c) => c !== colorName)
-        : [...prev, colorName]
+        : [...prev, colorName],
     );
   };
 
@@ -187,7 +185,7 @@ export default function AddProduct({ isOpen, isClose, refetch }) {
 
         const resp = await fetch(
           "https://api.imgbb.com/1/upload?key=31cbdc0f8e62b64424c515941a8bfd73",
-          { method: "POST", body: formData }
+          { method: "POST", body: formData },
         );
         const data = await resp.json();
         if (data?.success) return data.data.url;
@@ -273,11 +271,12 @@ export default function AddProduct({ isOpen, isClose, refetch }) {
       .join("\n");
 
     const longDetails = String(longDetailsHtml || "").trim();
-if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
-      // .split(/\r?\n/)
-      // .map((l) => l.trim())
-      // .filter(Boolean)
-      // .join("\n");
+    if (!isNonEmpty(longDetails))
+      return toast.warn("Additional info is required");
+    // .split(/\r?\n/)
+    // .map((l) => l.trim())
+    // .filter(Boolean)
+    // .join("\n");
 
     const categoryIds = selectedCategories.map((c) => c._id);
     const primaryCategory = selectedCategories[0] || null;
@@ -307,7 +306,7 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
       .map((sw) => ({ size: String(sw.size || "").trim() }))
       .filter((sw) => sw.size);
 
-       const chestArray = chestSizes
+    const chestArray = chestSizes
       .map((item) => ({ size: String(item.size || "").trim() }))
       .filter((item) => item.size);
 
@@ -342,7 +341,7 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
       stock,
       sku,
       sizeWeight: sizeWeightArray,
-       chest: chestArray,
+      chest: chestArray,
       waist: waistArray,
       color: selectedColors,
 
@@ -382,17 +381,19 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
 
       toast.success("Product added successfully!");
       if (typeof refetch === "function") {
-      refetch(); // অথবা queryClient.invalidateQueries({ queryKey: ["products"] })
-    }
+        refetch(); // অথবা queryClient.invalidateQueries({ queryKey: ["products"] })
+      }
 
       form.reset();
-            setSelectedCategories([]);
+      setSelectedCategories([]);
       setSelectedColors([]);
       setSizeWeights([{ size: "" }]);
       setChestSizes([{ size: "" }]);
       setWaistSizes([{ size: "" }]);
       setImageUrl([]);
-
+      setLongDetailsHtml("");
+      setIsDropdownOpen(false);
+      setIsOpenDropdown(false);
       setDeliveryType("cash_on_delivery");
       setDeliveryZone("inside_dhaka");
 
@@ -406,14 +407,7 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
     }
   };
 
-  // ---------- Loading / errors ----------
-  if (categoriesLoading || subcategoriesLoading || colorsLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="bg-white rounded-xl shadow p-6 text-sm">Loading…</div>
-      </div>
-    );
-  }
+
 
   if (categoriesError)
     return <div>Error loading categories: {categoriesError.message}</div>;
@@ -421,7 +415,15 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
     return <div>Error loading subcategories: {subcategoriesError.message}</div>;
   if (colorError) return <div>Error loading colors: {colorError.message}</div>;
 
-  if (!isOpen) return null;
+if (!isOpen) return null;
+
+if (categoriesLoading || subcategoriesLoading || colorsLoading) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white rounded-xl shadow p-6 text-sm">Loading…</div>
+    </div>
+  );
+}
 
   // ---------- UI ----------
   return (
@@ -446,7 +448,10 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
           </div>
 
           {/* Body */}
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-6 p-5">
+          <form
+            onSubmit={handleSubmit}
+            className="grid md:grid-cols-2 gap-6 p-5"
+          >
             {/* Left column */}
             <div className="space-y-4">
               {/* Product Name */}
@@ -465,7 +470,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
 
               {/* Category */}
               <div className="relative" ref={dropdownRef}>
-                <label className="block text-sm font-medium mb-1">Category</label>
+                <label className="block text-sm font-medium mb-1">
+                  Category
+                </label>
                 <button
                   type="button"
                   onClick={handleDropdownToggle}
@@ -473,7 +480,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                 >
                   <span
                     className={`truncate ${
-                      selectedCategories.length ? "text-gray-900" : "text-gray-400"
+                      selectedCategories.length
+                        ? "text-gray-900"
+                        : "text-gray-400"
                     }`}
                   >
                     {selectedCategories.length
@@ -499,7 +508,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                               type="button"
                               onClick={() => handleCategorySelect(cat)}
                               className={`w-full px-3 py-2 text-sm font-semibold ${
-                                selectedCategories.some((c) => c._id === cat._id)
+                                selectedCategories.some(
+                                  (c) => c._id === cat._id,
+                                )
                                   ? "bg-blue-50 text-blue-700"
                                   : "text-gray-800"
                               }`}
@@ -516,7 +527,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                                   type="button"
                                   onClick={() => handleCategorySelect(sub)}
                                   className={`w-full px-5 py-2 text-sm ${
-                                    selectedCategories.some((c) => c._id === sub._id)
+                                    selectedCategories.some(
+                                      (c) => c._id === sub._id,
+                                    )
                                       ? "bg-blue-100 text-blue-700"
                                       : "text-gray-600"
                                   }`}
@@ -545,7 +558,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
 
               {/* Supplier */}
               <div>
-                <label className="block text-sm font-medium mb-1">Supplier</label>
+                <label className="block text-sm font-medium mb-1">
+                  Supplier
+                </label>
                 <select
                   value={supplier}
                   onChange={(e) => setSupplier(e.target.value)}
@@ -651,28 +666,31 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                   </label>
                 </div>
 
-                {deliveryType === "free_delivery" && USE_FREE_DELIVERY_ZONES && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Free Delivery Area
-                    </label>
-                    <select
-                      value={deliveryZone}
-                      onChange={(e) => setDeliveryZone(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="inside_dhaka">Inside Dhaka</option>
-                      <option value="outside_dhaka">Outside Dhaka</option>
-                      <option value="all_bangladesh">All Bangladesh</option>
-                    </select>
-                  </div>
-                )}
+                {deliveryType === "free_delivery" &&
+                  USE_FREE_DELIVERY_ZONES && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Free Delivery Area
+                      </label>
+                      <select
+                        value={deliveryZone}
+                        onChange={(e) => setDeliveryZone(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="inside_dhaka">Inside Dhaka</option>
+                        <option value="outside_dhaka">Outside Dhaka</option>
+                        <option value="all_bangladesh">All Bangladesh</option>
+                      </select>
+                    </div>
+                  )}
               </div>
 
               {/* Status, Stock, SKU */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Status
+                  </label>
                   <select
                     name="status"
                     className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -684,7 +702,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantity</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Quantity
+                  </label>
                   <input
                     name="stock"
                     type="number"
@@ -712,7 +732,8 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
               {/* Upload */}
               <div>
                 <label className="block text-sm font-medium mb-1">
-                  Product Images <span className="text-gray-500">(max {MAX_IMAGES})</span>
+                  Product Images{" "}
+                  <span className="text-gray-500">(max {MAX_IMAGES})</span>
                 </label>
 
                 <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 transition">
@@ -729,7 +750,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                   />
                 </label>
 
-                {isUploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+                {isUploading && (
+                  <p className="text-xs text-gray-500 mt-1">Uploading…</p>
+                )}
 
                 {!!imageUrl.length && (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
@@ -758,7 +781,9 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
               {/* Size */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium">Select Size</label>
+                  <label className="block text-sm font-medium">
+                    Select Size
+                  </label>
                   <button
                     type="button"
                     onClick={handleAddSizeRow}
@@ -810,7 +835,7 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                 </div>
               </div>
 
-                            {/* Waist */}
+              {/* Waist */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium">Waist</label>
@@ -856,7 +881,8 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
                             className="w-3 h-3 rounded-full"
                             style={{
                               background:
-                                safeColors.find((x) => x.name === c)?.code || "#999",
+                                safeColors.find((x) => x.name === c)?.code ||
+                                "#999",
                             }}
                           />
                         </span>
@@ -894,37 +920,37 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
               </div>
             </div>
 
-          {/* Details */}
-<div className="md:col-span-2 grid md:grid-cols-1 gap-4">
-  <div>
-    <label className="block text-sm font-medium mb-1">
-      Short Product Info
-    </label>
-    <textarea
-      name="details"
-      rows="4"
-      required
-      className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      placeholder="Brief description (you can use multiple lines)"
-    />
-  </div>
+            {/* Details */}
+            <div className="md:col-span-2 grid md:grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Short Product Info
+                </label>
+                <textarea
+                  name="details"
+                  rows="4"
+                  required
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Brief description (you can use multiple lines)"
+                />
+              </div>
 
-  <div>
-    <label className="block text-sm font-medium mb-1">
-      Full Description
-    </label>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Full Description
+                </label>
 
- <div className="rounded-lg overflow-hidden border border-gray-300 quillWrap">
-  <ReactQuill
-    theme="snow"
-    value={longDetailsHtml}
-    onChange={setLongDetailsHtml}
-    modules={quillModules}
-    placeholder="Write full description..."
-  />
-</div>
-  </div>
-</div>
+                <div className="rounded-lg overflow-hidden border border-gray-300 quillWrap">
+                  <ReactQuill
+                    theme="snow"
+                    value={longDetailsHtml}
+                    onChange={setLongDetailsHtml}
+                    modules={quillModules}
+                    placeholder="Write full description..."
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Footer */}
             <div className="md:col-span-2 flex items-center justify-between pt-2">
@@ -946,8 +972,6 @@ if (!isNonEmpty(longDetails)) return toast.warn("Additional info is required");
           </form>
         </div>
       </div>
-
-      <ToastContainer position="top-center" autoClose={2000} hideProgressBar />
     </div>
   );
 }

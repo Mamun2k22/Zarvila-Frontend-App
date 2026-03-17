@@ -211,12 +211,29 @@ const HeaderDesktop = ({
           {/* Logo / Brand */}
           <Link to="/" className="justify-self-center mr-20">
             {siteLogo ? (
+              // <img
+              //   className="h-12 w-auto"
+              //   src={`${settingsApi.API_BASE}${siteLogo}`}
+              //   alt={siteBrand}
+              //   loading="lazy"
+
+              // />
+
               <img
-                className="h-12 w-auto"
-                src={`${settingsApi.API_BASE}${siteLogo}`}
-                alt={siteBrand}
-                loading="lazy"
-              />
+  className="h-12 w-auto"
+  src={
+    siteLogo
+      ? /^(https?:)?\/\//i.test(siteLogo.trim())
+        ? siteLogo.trim()
+        : `${settingsApi.API_BASE}${siteLogo}`
+      : ""
+  }
+  alt={siteBrand}
+  loading="lazy"
+  onError={(e) => {
+    e.currentTarget.src = "/placeholder.png";
+  }}
+/>
             ) : (
               <span className="text-black font-semibold tracking-wide">
                 {siteBrand}
