@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState, memo } from "react";
 import { Link } from "react-router-dom";
 
-const MenCollection = () => {
+function MenCollection() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // NEW: dynamic title/subtitle state
   const [sectionTitle, setSectionTitle] = useState("Men's Collection");
   const [subtitles, setSubtitles] = useState([
     "Grab these new items before they are gone!",
@@ -14,17 +13,30 @@ const MenCollection = () => {
   ]);
   const [subIndex, setSubIndex] = useState(0);
 
-  const baseURL = import.meta.env.VITE_APP_SERVER_URL; // e.g. http://localhost:5000/
+  const baseURL = useMemo(
+    () => (import.meta.env.VITE_APP_SERVER_URL || "http://localhost:5000").replace(/\/$/, ""),
+    []
+  );
 
-  // 1) Load Men section title/subtitles from backend
   useEffect(() => {
-    const fetchMenSectionSettings = async () => {
-      try {
-        const res = await fetch(`${baseURL}api/home-section-settings/men`);
-        const json = await res.json();
+    let alive = true;
 
-        const doc = json?.data;
-        if (doc?.sectionTitle) setSectionTitle(doc.sectionTitle);
+    const fetchData = async () => {
+      try {
+        const [settingsRes, productsRes] = await Promise.all([
+          fetch(`${baseURL}/api/home-section-settings/men`),
+          fetch(`${baseURL}/api/products/public/home/men?limit=12`),
+        ]);
+
+        const settingsJson = await settingsRes.json();
+        const productsJson = await productsRes.json();
+
+        if (!alive) return;
+
+        const doc = settingsJson?.data;
+        if (doc?.sectionTitle) {
+          setSectionTitle(doc.sectionTitle);
+        }
 
         const list = Array.isArray(doc?.subtitles) ? doc.subtitles : [];
         const activeSortedTexts = list
@@ -32,177 +44,173 @@ const MenCollection = () => {
           .sort((a, b) => (a?.order ?? 0) - (b?.order ?? 0))
           .map((s) => s.text);
 
-        // min 3 texts expected; but safe fallback
-        if (activeSortedTexts.length >= 1) setSubtitles(activeSortedTexts);
-      } catch (err) {
-        console.error("Error loading men section settings:", err);
-        // fallback already set in state
-      }
-    };
+        if (activeSortedTexts.length > 0) {
+          setSubtitles(activeSortedTexts);
+        }
 
-    fetchMenSectionSettings();
-  }, [baseURL]);
+        const productList = Array.isArray(productsJson)
+          ? productsJson
+          : Array.isArray(productsJson?.data)
+          ? productsJson.data
+          : Array.isArray(productsJson?.products)
+          ? productsJson.products
+          : [];
 
-  // 2) Subtitle carousel auto-rotate (every 2.5s)
-  useEffect(() => {
-    if (!subtitles?.length) return;
-    const t = setInterval(() => {
-      setSubIndex((p) => (p + 1) % subtitles.length);
-    }, 2500);
-    return () => clearInterval(t);
-  }, [subtitles]);
-
-  // 3) Load men products (your existing code)
-  useEffect(() => {
-    const fetchMenProducts = async () => {
-      try {
-        const res = await fetch(
-          `${baseURL}api/products/public/home/men?limit=12`,
-        );
-        const data = await res.json();
-        console.log("men api response =>", data);
-
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.data)
-            ? data.data
-            : Array.isArray(data?.products)
-              ? data.products
-              : [];
-
-        setProducts(list);
+        setProducts(productList);
       } catch (err) {
         console.error("Error loading men collection:", err);
+        if (!alive) return;
         setProducts([]);
       } finally {
-        setLoading(false);
+        if (alive) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchMenProducts();
+    fetchData();
+
+    return () => {
+      alive = false;
+    };
   }, [baseURL]);
+
   useEffect(() => {
     if (!subtitles?.length || subtitles.length <= 1) return;
 
-    const t = setInterval(() => {
-      setSubIndex((p) => (p + 1) % subtitles.length);
+    const timer = setInterval(() => {
+      setSubIndex((prev) => (prev + 1) % subtitles.length);
     }, 2500);
 
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [subtitles]);
 
   if (loading) {
-    return <div className="text-center py-10">Loading...</div>;
+    return (
+      <section className="bg-gradient-to-br from-gray-100 via-gray-200 to-blue-100 py-7 px-5">
+        <div className="max-w-full mx-auto text-center px-0 xl:px-3">
+          <div className="h-7 w-48 mx-auto bg-gray-300 rounded animate-pulse mb-3" />
+          <div className="h-5 w-72 mx-auto bg-gray-200 rounded animate-pulse mb-8" />
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 mt-2 md:mt-8">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-md overflow-hidden shadow"
+              >
+                <div className="w-full h-64 bg-gray-200 animate-pulse" />
+                <div className="p-2 text-center">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse mb-2" />
+                  <div className="h-4 w-20 mx-auto bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-100 via-gray-200 to-blue-100 min-h-screen py-7 px-5">
+    <section className="bg-gradient-to-br from-gray-100 via-gray-200 to-blue-100 py-7 px-5">
       <div className="max-w-full mx-auto text-center px-0 xl:px-3">
-        {/* ✅ Dynamic lines here */}
         <h2 className="text-2xl font-semibold mb-2">{sectionTitle}</h2>
-        {/* <p className="text-gray-800 mb-8">{subtitles[subIndex] || ""}</p> */}
-        <div className="relative h-6 md:h-7 mb-8 overflow-hidden">
-          {/* <p
-    key={subIndex} 
-    className="
-      absolute inset-0 text-gray-800
-      animate-subtitle
-    "
-  >
-    {subtitles[subIndex] || ""}
-  </p> */}
-          <div className="w-full flex justify-center mb-8">
-            <div className="relative h-7 md:h-8 overflow-hidden w-full max-w-xl">
-              <div
-                className="absolute inset-0 flex transition-transform duration-700 ease-in-out"
-                style={{ transform: `translateX(-${subIndex * 100}%)` }}
-              >
-                {subtitles.map((text, i) => (
-                  <div
-                    key={i}
-                    className="w-full flex-shrink-0 flex items-center justify-center"
-                  >
-                    <p className="text-gray-800">{text}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 mt-2 md:mt-8">
-       {products.map((product) => {
-  const regularPrice = Number(product?.regularPrice || 0);
-  const sellPrice = Number(product?.price || 0);
-  const showDiscountStyle = regularPrice > sellPrice;
-
-  const firstImage =
-    Array.isArray(product?.productImage) && product.productImage.length > 0
-      ? product.productImage[0]
-      : "";
-
-  return (
-    <div
-      key={product._id}
-      className="bg-white rounded-md overflow-hidden shadow relative group hover:shadow-lg transition-shadow duration-300"
-    >
-      <Link to={`/product-details/${product._id}`} className="block h-full">
-        <div className="relative overflow-hidden">
-          <span className="absolute top-2 right-2 z-10 bg-teal-400 text-white text-xs font-semibold px-2 py-1 rounded">
-            NEW
-          </span>
-
-          <img
-            src={firstImage}
-            alt={product.productName}
-            className="w-full h-64 object-cover"
-          />
-
-          <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-all duration-300 bg-black bg-opacity-80 py-2">
-            <Link
-              to={`/product-details/${product._id}`}
-              className="w-full text-white font-semibold transition-colors duration-200"
-              onClick={(e) => e.stopPropagation()}
+        <div className="w-full flex justify-center mb-8">
+          <div className="relative h-7 md:h-8 overflow-hidden w-full max-w-xl">
+            <div
+              className="absolute inset-0 flex transition-transform duration-700 ease-in-out"
+              style={{ transform: `translateX(-${subIndex * 100}%)` }}
             >
-              Add to Cart
-            </Link>
-          </div>
-        </div>
-
-        <div className="md:p-2 p-1.5 text-center">
-          <h3 className="text-sm font-normal md:font-medium text-gray-800 mb-1">
-            {product.productName}
-          </h3>
-
-          <div className="flex justify-center items-center gap-2">
-            {showDiscountStyle && (
-              <div className="text-gray-500 line-through text-xs">
-                Tk. {regularPrice}
-              </div>
-            )}
-
-            <div className="text-red-600 font-semibold text-sm">
-              Tk. {sellPrice}
+              {subtitles.map((text, i) => (
+                <div
+                  key={i}
+                  className="w-full flex-shrink-0 flex items-center justify-center"
+                >
+                  <p className="text-gray-800">{text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </Link>
-    </div>
-  );
-})}
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 mt-2 md:mt-8">
+          {products.map((product, index) => {
+            const regularPrice = Number(product?.regularPrice || 0);
+            const sellPrice = Number(product?.price || 0);
+            const showDiscountStyle = regularPrice > sellPrice;
+
+            const firstImage =
+              Array.isArray(product?.productImage) && product.productImage.length > 0
+                ? product.productImage[0]
+                : "/placeholder.png";
+
+            const isPriorityImage = index < 2;
+
+            return (
+              <article
+                key={product._id}
+                className="bg-white rounded-md overflow-hidden shadow relative group hover:shadow-lg transition-shadow duration-300"
+              >
+                <Link to={`/product-details/${product._id}`} className="block h-full">
+                  <div className="relative overflow-hidden">
+                    <span className="absolute top-2 right-2 z-10 bg-teal-400 text-white text-xs font-semibold px-2 py-1 rounded">
+                      NEW
+                    </span>
+
+                    <img
+                      src={firstImage}
+                      alt={product.productName}
+                      className="w-full h-64 object-cover"
+                      loading={isPriorityImage ? "eager" : "lazy"}
+                      fetchPriority={isPriorityImage ? "high" : "low"}
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/placeholder.png";
+                      }}
+                    />
+
+                    <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-all duration-300 bg-black/80 py-2">
+                      <span className="w-full text-white font-semibold transition-colors duration-200">
+                        Add to Cart
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="md:p-2 p-1.5 text-center">
+                    <h3 className="text-sm font-normal md:font-medium text-gray-800 mb-1 line-clamp-2 min-h-[40px]">
+                      {product.productName}
+                    </h3>
+
+                    <div className="flex justify-center items-center gap-2">
+                      {showDiscountStyle && (
+                        <div className="text-gray-500 line-through text-xs">
+                          Tk. {regularPrice}
+                        </div>
+                      )}
+
+                      <div className="text-red-600 font-semibold text-sm">
+                        Tk. {sellPrice}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </article>
+            );
+          })}
         </div>
 
-        <Link to={"/mensub"}>
-          <div className="mt-8">
+        <div className="mt-8">
+          <Link to="/mensub">
             <button className="px-6 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors duration-200">
               VIEW ALL
             </button>
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
-    </div>
+    </section>
   );
-};
+}
 
-export default MenCollection;
+export default memo(MenCollection);

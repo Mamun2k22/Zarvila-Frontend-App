@@ -1,104 +1,123 @@
-import React, { useEffect } from "react";
+import React, { useMemo, memo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import useLoading from "../../hooks/useLoading";
-import Loader from "../../Spinner/Loader";
 
-const ProductCategory = () => {
-  const { isLoading, showLoader, hideLoader } = useLoading();
-  const BASE = import.meta.env.VITE_APP_SERVER_URL;
+function ProductCategory() {
+  const BASE = useMemo(
+    () => (import.meta.env.VITE_APP_SERVER_URL || "http://localhost:5000").replace(/\/$/, ""),
+    []
+  );
 
-  // ✅ build absolute url for images like: "/uploads/.." => "http://localhost:5000/uploads/.."
   const toAbsoluteUrl = (baseUrl, path) => {
-    if (!path) return "";
-    const s = String(path);
-    if (s.startsWith("http://") || s.startsWith("https://")) return s;
+    if (!path) return "/placeholder.png";
+
+    const s = String(path).trim();
+    if (/^https?:\/\//i.test(s)) return s;
 
     const baseClean = String(baseUrl || "").replace(/\/$/, "");
-    if (s.startsWith("/")) return `${baseClean}${s}`;
-    return `${baseClean}/${s}`;
+    return s.startsWith("/") ? `${baseClean}${s}` : `${baseClean}/${s}`;
   };
 
   const {
     data: categories = [],
     error,
-    isFetching,
+    isLoading,
   } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      showLoader();
-      const res = await fetch(`${BASE}api/categories`);
-      const data = await res.json();
-      hideLoader();
-      return data;
+      const res = await fetch(`${BASE}/api/categories`);
+      if (!res.ok) throw new Error("Failed to load categories");
+      return res.json();
     },
-    onError: hideLoader,
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  useEffect(() => {
-    if (!isFetching) hideLoader();
-  }, [isFetching, hideLoader]);
+  if (isLoading) {
+    return (
+      <section className="bg-white">
+        <div className="max-w-full mx-auto px-4 sm:px-6 xl:px-8 py-4">
+          <div className="flex items-center justify-center mb-4">
+            <div className="flex-1 flex items-center">
+              <span className="h-[1px] w-full bg-gray-300"></span>
+              <span className="ml-2 h-2 w-2 rounded-full bg-gray-400"></span>
+            </div>
 
-  if (isLoading || isFetching) return <Loader />;
-  if (error)
+            <div className="mx-6 h-7 w-40 bg-gray-200 rounded animate-pulse" />
+
+            <div className="flex-1 flex items-center">
+              <span className="mr-2 h-2 w-2 rounded-full bg-gray-400"></span>
+              <span className="h-[1px] w-full bg-gray-300"></span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="relative overflow-hidden aspect-[775/747] bg-gray-200 animate-pulse rounded-sm"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
     return <div className="py-10 text-center">Error loading categories</div>;
+  }
 
   return (
     <section className="bg-white">
-      <div className=" max-w-full mx-auto px-4 sm:px-6 xl:px-8 py-4">
-        {/* header row */}
+      <div className="max-w-full mx-auto px-4 sm:px-6 xl:px-8 py-4">
         <div className="flex items-center justify-center mb-4">
-          {/* left widget line */}
           <div className="flex-1 flex items-center">
             <span className="h-[1px] w-full bg-gray-300"></span>
             <span className="ml-2 h-2 w-2 rounded-full bg-gray-400"></span>
           </div>
 
-          {/* center title */}
           <h2 className="mx-6 text-xl md:text-2xl font-bold tracking-wide text-gray-900 text-center">
             Top Categories
           </h2>
 
-          {/* right widget line */}
           <div className="flex-1 flex items-center">
             <span className="mr-2 h-2 w-2 rounded-full bg-gray-400"></span>
             <span className="h-[1px] w-full bg-gray-300"></span>
           </div>
         </div>
 
-        {/* grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
           {categories.map((cat, idx) => {
-            // ✅ route will use slug if exists, else fallback to name
-            const to = `/category/${encodeURIComponent(cat?.slug || cat?.name)}`;
-
-            // ✅ category image absolute
+            const to = `/category/${encodeURIComponent(cat?.slug || cat?.name || "")}`;
             const imgSrc = toAbsoluteUrl(BASE, cat?.image);
+            const isPriorityImage = idx < 2;
 
             return (
               <Link
                 key={cat._id || idx}
                 to={to}
-                className="group relative overflow-hidden aspect-[775/747]"
+                className="group relative overflow-hidden aspect-[775/747] rounded-sm"
               >
-                {/* Image */}
                 <img
                   src={imgSrc}
-                  alt={cat.name}
-                  loading="lazy"
+                  alt={cat?.name || "Category"}
+                  loading={isPriorityImage ? "eager" : "lazy"}
+                  fetchPriority={isPriorityImage ? "high" : "low"}
+                  decoding="async"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/placeholder.png";
+                  }}
                 />
 
-                {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
 
-                {/* Label */}
-                <span
-                  className="absolute left-1/2 -translate-x-1/3 bottom-4 px-3 py-1 
-                         rounded-sm text-white text-sm font-medium tracking-wide 
-                         bg-black/40 backdrop-blur-sm "
-                >
-                  {cat.name}
+                <span className="absolute left-1/2 -translate-x-1/2 bottom-4 px-3 py-1 rounded-sm text-white text-sm font-medium tracking-wide bg-black/40 backdrop-blur-sm">
+                  {cat?.name}
                 </span>
               </Link>
             );
@@ -107,6 +126,6 @@ const ProductCategory = () => {
       </div>
     </section>
   );
-};
+}
 
-export default ProductCategory;
+export default memo(ProductCategory);

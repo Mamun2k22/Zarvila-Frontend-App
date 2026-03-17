@@ -204,7 +204,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="h-[80vh] md:h-[100vh] flex items-center justify-center px-4">
       <div className="container mx-auto">
         <div className="max-w-md mx-auto bg-white rounded-lg overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-300">
           {/* Header */}

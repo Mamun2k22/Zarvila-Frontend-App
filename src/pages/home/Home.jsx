@@ -1,24 +1,25 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 
-import Features from "../../components/Features";
-
-import OurBrands from "../../components/OurBrands";
-
 import HeroSlider from "../../components/HomeHero/HeroSlider";
-
+import HomeMarqueeBar from "../../../src/components/ui/HomeMarqueeBar";
 import ProductCategory from "../productCategory/ProductCategory";
 import MenCollection from "../../components/ui/MenCollection";
-import WomenCollection from "../../components/ui/WomenCollection";
-import KidCollection from "../../components/ui/KidCollection";
-import FeaturesBar from "../../components/FeaturesBar";
-import AccessoriesCollection from "../../components/ui/AccessoriesCollection";
-import HomeMarqueeBar from "../../../src/components/ui/HomeMarqueeBar";
-import RecentlyViewed from "../../components/RecentlyViewed";
+
+const WomenCollection = lazy(() => import("../../components/ui/WomenCollection"));
+const KidCollection = lazy(() => import("../../components/ui/KidCollection"));
+const AccessoriesCollection = lazy(() => import("../../components/ui/AccessoriesCollection"));
+const FeaturesBar = lazy(() => import("../../components/FeaturesBar"));
+const OurBrands = lazy(() => import("../../components/OurBrands"));
+const RecentlyViewed = lazy(() => import("../../components/RecentlyViewed"));
+
+const SectionLoader = () => (
+  <div className="py-8 text-center text-sm text-gray-500">Loading...</div>
+);
 
 const Home = () => {
   return (
-    <div className="">
+    <div>
       <Helmet>
         <title>Zarvila</title>
         <meta name="description" content="M.M trading Center" />
@@ -28,25 +29,26 @@ const Home = () => {
         />
         <link rel="canonical" href="https://www.mmtrading.com/" />
       </Helmet>
-      {/* Main Title */}
-      <h1 className=" hidden text-lg md:text-3xl font-bold text-center mt-4 text-blue-500">
+
+      <h1 className="hidden text-lg md:text-3xl font-bold text-center mt-4 text-blue-500">
         Zarvilla - Your Trusted Online Store
       </h1>
+
       <HeroSlider />
-      {/* <MarqueeRtl /> */}
       <HomeMarqueeBar />
       <ProductCategory />
       <MenCollection />
-      <WomenCollection />
-      <KidCollection />
-      <AccessoriesCollection />
 
-      <FeaturesBar />
-      <div className="mt-7">
-        <OurBrands />
-      </div>
-      <RecentlyViewed />
-      {/* <DailyBestSeller /> */}
+      <Suspense fallback={<SectionLoader />}>
+        <WomenCollection />
+        <KidCollection />
+        <AccessoriesCollection />
+        <FeaturesBar />
+        <div className="mt-7">
+          <OurBrands />
+        </div>
+        <RecentlyViewed />
+      </Suspense>
     </div>
   );
 };
