@@ -31,6 +31,7 @@ import { IoBagAddOutline, IoColorFill } from "react-icons/io5";
 import { RiAdminLine } from "react-icons/ri";
 
 import Color from "../../components/Color";
+import NotificationBell from "../../components/NotificationBell";
 import useLogout from "../../hooks/useLogout";
 import { useUser } from "../../hooks/userContext";
 import { FaChartLine, FaList } from "react-icons/fa";
@@ -48,8 +49,8 @@ export default function Dashboard() {
 
   // ✅ userContext থেকে user নেই/লোডিং—দুটোই হ্যান্ডেল
   const { user, loading } = useUser() || {};
+  const token = localStorage.getItem("token");
   const { handleLogout } = useLogout();
-  const [unread] = useState(9); // demo
   const defaultAvatar = "https://preline.co/assets/img/160x160/img1.jpg";
   const avatarSrc = user?.profileImage || defaultAvatar;
   // ✅ user hydrate হওয়া পর্যন্ত UI-র ক্রিটিক্যাল অংশ render না করি
@@ -65,7 +66,7 @@ export default function Dashboard() {
   const adminLinks = [
     { to: "/dashboard", icon: <RxDashboard />, label: "Dashboard", end: true },
     { to: "/", icon: <FiHome />, label: "Home" },
-    { to: "/dashboard/seller", icon: <RiAdminLine />, label: "Admin" },
+    // { to: "/dashboard/seller", icon: <RiAdminLine />, label: "Admin" },
     { to: "/dashboard/hero", icon: <FiImage />, label: "Banner" },
     { to: "/dashboard/orders", icon: <FiTag />, label: "All Orders" },
     { to: "/dashboard/product", icon: <IoBagAddOutline />, label: "Product" },
@@ -136,7 +137,7 @@ export default function Dashboard() {
           end: true,
         },
         { to: "/", icon: <FiHome />, label: "Home" },
-        { to: "/dashboard/seller", icon: <RiAdminLine />, label: "Admin" },
+        // { to: "/dashboard/seller", icon: <RiAdminLine />, label: "Admin" },
       ],
     },
     {
@@ -373,6 +374,7 @@ export default function Dashboard() {
                 />
               </svg>
             </button>
+  <NotificationBell token={token} isAdmin={isAdmin} />
 
             <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-lg border bg-white min-w-[120px]">
               {!isHydrated ? (
